@@ -1,19 +1,54 @@
-import React from "react";
+import React, { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
 import { Grade } from "./Grade";
-
-import "./GradesInput.css";
 import { TranslateText } from "../lang/TranslateText";
+import "./GradesInput.css";
+import { ButtonWithSoundProps, withSound } from "../sound/withSound";
 
-// just a mock - use props/state whatever :)
-const grades = [12, 2, 3, 4, 5];
+type InputValues = {
+    city: string;
+    name: string;
+    note: string;
+    grades: number[];
+    date: string;
+};
 
-// todo: implement the logic of adding new grades and removal on click
-// validate so the value entered is >0.1 and <10. Numbers have to contain max two digits after coma
-// Just disable button if grade is invalid
-export const GradesInput: React.FC = () => {
+type GradesInputProps = {
+    gradesSetter: Dispatch<SetStateAction<InputValues>>;
+    inputValues: number[];
+};
+
+const ButtonWithSound: React.FC<ButtonWithSoundProps> = withSound(({ children, ...props }) => {
+    return (
+        <button {...props}>{children}</button>
+    );
+});
+
+export const GradesInput: React.FC<GradesInputProps> = ({ gradesSetter, inputValues }) => {
+    const [validGrade, setValidGrade] = useState<boolean>(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
     const onGradeRemove = (index: number) => () => {
-        console.log(">>>", "Remove grade on index", index);
+        gradesSetter(current => ({ ...current, grades: current.grades.filter((grade, gradeIndex) => gradeIndex !== index) }));
     };
+
+    const onAddGrade = useCallback(() => {
+        if (inputRef.current !== null) {
+            const inputValue = parseFloat(inputRef.current?.value || "10");
+            gradesSetter(current => ({ ...current, grades: [...current.grades, inputValue] }));
+            setValidGrade(false);
+        }
+        if (inputRef.current !== null) {
+            inputRef.current.value = "";
+        }
+    }, [gradesSetter]);
+
+    const handleInput = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.value && parseFloat(event.target.value) >= 0.1 && parseFloat(event.target.value) <= 10) {
+            setValidGrade(true);
+        } else {
+            setValidGrade(false);
+        }
+    }, []);
 
     return (
         <div>
@@ -26,13 +61,16 @@ export const GradesInput: React.FC = () => {
                     min={0.1}
                     max={10}
                     placeholder="10"
+                    ref={inputRef}
+                    onChange={handleInput}
                 />
-                <button data-test="add-grade-button">
+                <ButtonWithSound soundType="positive" onClick={onAddGrade} disabled={!validGrade} data-test="add-grade-button">
                     <TranslateText translationKey="form.button.addGrade" />
-                </button>
+                </ButtonWithSound>
             </div>
             <div className="grades-list">
-                {grades.map((grade, index) =>
+                {inputValues.map((grade, index) =>
+                    // eslint-disable-next-line
                     <Grade key={index} value={grade} onRemove={onGradeRemove(index)} />,
                 )}
             </div>

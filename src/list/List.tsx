@@ -1,10 +1,15 @@
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import { ListItem } from "./ListItem";
-
 import "./List.css";
 import { TranslateText } from "../lang/TranslateText";
+import { Note } from "../types";
 
-export const List: React.FC = () => {
+type ListProps = {
+    listItems: Note[];
+    listSetter: Dispatch<SetStateAction<Note[]>>;
+};
+
+export const List: React.FC<ListProps> = ({ listItems, listSetter }) => {
     return (
         <table className="list">
             <thead>
@@ -17,7 +22,9 @@ export const List: React.FC = () => {
                 </tr>
             </thead>
             <tbody>
-                <ListItem />
+                {listItems.map(item => (
+                    <ListItem key={item.id} item={item} listSetter={listSetter} />
+                ))}
             </tbody>
         </table>
     );

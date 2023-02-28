@@ -10,22 +10,26 @@ export function isResponseError<R>(response: R | Error | null): response is Erro
     return response instanceof Error;
 }
 
-// todo: implement a hook that would help Bob to use the network
-// this hook should help to keep track on request status,
-// return response or error depending on the result of request
-
 export function useRequest<Response>(request: () => Promise<Response>): UseRequest<Response> {
-    const [response, setResponse] = React.useState<Response | null>(null);
+    const [response, setResponse] = React.useState<Response | Error | null >(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+
     const makeRequest = React.useCallback(async () => {
-        const result = await request();
+        setIsLoading(true);
+        try {
+            const result = await request();
+            setResponse(result);
+        } catch (error) {
+            console.log(`Request failed: ${error}`);
+            setResponse(error as Error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [request]); // include request in the dependency array
 
-        setResponse(result);
-    }, []);
-
-    // interface should be kept as is, implement only functionality
     return {
-        response: response,
-        isLoading: false,
-        makeRequest: makeRequest,
+        response,
+        isLoading,
+        makeRequest,
     };
 }
